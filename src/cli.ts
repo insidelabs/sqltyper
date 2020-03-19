@@ -28,6 +28,7 @@ import { traverseATs } from './fp-utils'
 import * as Warn from './Warn'
 
 type Options = {
+  camelCase: boolean
   verbose: boolean
   index: boolean
   prettify: boolean
@@ -48,6 +49,7 @@ async function main(): Promise<number> {
   }
 
   const options: Options = {
+    camelCase: args['camel-case'],
     verbose: args.verbose,
     index: args.index,
     prettify: args.prettify,
@@ -110,6 +112,13 @@ function parseArgs() {
       describe: 'File extensions to consider, e.g. -e sql,psql',
       type: 'string',
       default: 'sql',
+    })
+    .option('camel-case', {
+      alias: 'C',
+      describe:
+        'Return column names in camelCase.',
+      type: 'boolean',
+      default: false,
     })
     .option('verbose', {
       alias: 'v',
@@ -435,6 +444,7 @@ function processSQLFile(
       generateTSCode(clients, path.basename(filePath), source, fnName, {
         prettierFileName: options.prettify ? tsPath : undefined,
         pgModule: options.pgModule,
+        camelCase: options.camelCase,
       })
     ),
     TaskEither.chain(tsCode => async () => {

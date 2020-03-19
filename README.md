@@ -195,6 +195,11 @@ Check whether all output files are up-to-date without actually
 updating them. If they are, exit with status 0, otherwise exit with
 status 1. Useful for CI or pre-commit hooks. Default: `false`.
 
+`--camel-case`, `-C`
+
+Column names are converted into camelCase in the returned rows. Default:
+`false`.
+
 `--prettify`, `-p`
 
 Apply [prettier] to generated TypeScript files. [prettier] must be

@@ -43,9 +43,10 @@ export function generateTSCode(
     pgModule?: string | undefined
     verbose?: boolean | undefined
     terminalColumns?: number | undefined
+    camelCase: boolean | undefined
   }
 ): TaskEither.TaskEither<string, string> {
-  const { prettierFileName = null, pgModule = 'pg' } = options || {}
+  const { prettierFileName = null, pgModule = 'pg', camelCase = false } = options || {}
 
   return pipe(
     TaskEither.right(stmt),
@@ -56,7 +57,8 @@ export function generateTSCode(
           sourceFileName,
           pgModule,
           funcName,
-          stmt
+          stmt,
+          { camelCase },
         )
       )
     ),
