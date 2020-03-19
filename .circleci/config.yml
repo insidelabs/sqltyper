@@ -8,10 +8,11 @@ jobs:
           PGUSER: sqltyper
           PGDATABASE: sqltyper
 
-      - image: circleci/postgres:11
+      - image: circleci/postgres:11-ram
         environment:
           POSTGRES_USER: sqltyper
           POSTGRES_DB: sqltyper
+          POSTGRES_HOST_AUTH_METHOD: trust
 
     steps:
       - checkout
