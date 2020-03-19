@@ -12,6 +12,7 @@ jobs:
         environment:
           POSTGRES_USER: sqltyper
           POSTGRES_DB: sqltyper
+          POSTGRES_HOST_AUTH_METHOD: trust
 
     steps:
       - checkout
