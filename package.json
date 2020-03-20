@@ -1,6 +1,6 @@
 {
   "name": "@insidelabs/sqltyper",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Typed SQL queries in PostgreSQL",
   "main": "dist/src/index.js",
   "repository": "https://github.com/akheron/sqltyper",
