@@ -6,7 +6,7 @@ import { ClientBase } from '../pg'
 export async function enums(
   client: ClientBase
 ): Promise<Array<{ oid: number; typname: string; labels: Array<string> }>> {
-  const result = await client.query(`\
+  const result = await client.query(`
 SELECT
   oid,
   typname,
