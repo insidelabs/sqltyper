@@ -4,8 +4,10 @@
     "target": "es6",
     "module": "commonjs",
     "strict": true,
-    "allowJs": true,
-    "resolveJsonModule": true
+    "allowJs": false,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true
   },
   "include": [
     "src"
