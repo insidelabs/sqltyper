@@ -8,6 +8,7 @@
   "rules": {
     "no-namespace": false,
     "interface-over-type-literal": false,
+    "no-console": false,
     "object-literal-sort-keys": false,
     "ordered-imports": [true, { "import-sources-order": "lowercase-last" }]
   },
