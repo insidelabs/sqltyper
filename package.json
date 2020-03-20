@@ -6,6 +6,7 @@
   "repository": "https://github.com/akheron/sqltyper",
   "author": "Petri Lehtinen <petri@digip.org>",
   "license": "MIT",
+  "private": false,
   "keywords": [
     "database",
     "postgres",
