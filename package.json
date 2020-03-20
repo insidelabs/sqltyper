@@ -1,5 +1,5 @@
 {
-  "name": "sqltyper",
+  "name": "@insidelabs/sqltyper",
   "version": "0.2.3",
   "description": "Typed SQL queries in PostgreSQL",
   "main": "dist/src/index.js",
