@@ -11,7 +11,10 @@ export function specialFunctionCall(primaryExpr: Parser<Expression>) {
     argsParser: Parser<Expression[]>
   ) {
     return seq(
-      (_, argList) => Expression.createFunctionCall(funcName, argList),
+      (_, argList) => Expression.createFunctionCall(
+        Expression.FunctionCallRef.create(null, funcName),
+        argList
+      ),
       expectIdentifier(funcName),
       parenthesized(argsParser)
     )

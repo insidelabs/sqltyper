@@ -118,17 +118,25 @@ const functionArguments: Parser<Expression[]> = parenthesized(
   )
 )
 
-const columnRefOrFunctionCallExpr: Parser<Expression> = seq(
+// [ schema . ] function(args)
+const functionCall: Parser<Expression.FunctionCall> = seq(
+  (id1, id2, args) => Expression.createFunctionCall(
+    id2 ? Expression.FunctionCallRef.create(id1, id2) : Expression.FunctionCallRef.create(null, id1),
+    args
+  ),
+  identifier,
+  optional(seq($2, symbol('.'), identifier)),
+  functionArguments
+)
+
+const columnRefExpr: Parser<Expression> = seq(
   (ident, rest) =>
     rest == null
       ? Expression.createColumnRef(ident)
-      : typeof rest === 'string'
-      ? Expression.createTableColumnRef(ident, rest)
-      : Expression.createFunctionCall(ident, rest),
+      : Expression.createTableColumnRef(ident, rest),
   identifier,
-  oneOf<string | Expression[] | null>(
+  oneOf<string | null>(
     seq($2, symbol('.'), identifier),
-    functionArguments,
     _
   )
 )
@@ -192,7 +200,8 @@ const primaryExpr: Parser<Expression> = seq(
     arraySubQueryExpr,
     caseExpr,
     attempt(specialFunctionCall(lazy(() => primaryExpr))),
-    columnRefOrFunctionCallExpr,
+    attempt(functionCall),
+    columnRefExpr,
     constantExpr,
     parameterExpr,
     parenthesizedExpr
@@ -519,18 +528,26 @@ const tableExpression: Parser<TableExpression> = seq(
   many(oneOf(crossJoin, qualifiedJoin, naturalJoin))
 )
 
-const from: Parser<TableExpression> = seq(
-  (_from, tableExpr, rest) =>
-    rest.length === 0
-      ? tableExpr
-      : // Implicit join equals to CROSS JOIN
-        rest.reduce(
-          (acc, next) => TableExpression.createCrossJoin(acc, next),
-          tableExpr
-        ),
+const from: Parser<TableExpression|Expression.FunctionCall> = seq(
+  (_from, rest) => rest,
   reservedWord('FROM'),
-  tableExpression,
-  many(seq($2, symbol(','), tableExpression))
+  oneOf<TableExpression | Expression.FunctionCall>(
+    attempt(functionCall),
+    attempt(
+      seq(
+        (tableExpr, rest) =>
+          rest.length === 0
+            ? tableExpr
+            : // Implicit join equals to CROSS JOIN
+            rest.reduce(
+              (acc, next) => TableExpression.createCrossJoin(acc, next),
+              tableExpr
+            ),
+        tableExpression,
+        many(seq($2, symbol(','), tableExpression))
+      )
+    ),
+  )
 )
 
 // WHERE

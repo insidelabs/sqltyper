@@ -651,8 +651,8 @@ function inferExpressionNullability(
     // - The function is not NULL safe: it can return NULL even if all
     //   of its arguments are non-NULL
     //
-    functionCall: ({ funcName, argList }) => {
-      switch (functionNullSafety(funcName)) {
+    functionCall: ({ functionCallRef, argList }) => {
+      switch (functionNullSafety(functionCallRef.funcName)) {
         case 'safe':
           return pipe(
             traverseATE(argList, arg =>
@@ -684,7 +684,7 @@ function inferExpressionNullability(
           return TaskEither.right(
             Warn.warning(
               FieldNullability.any(true),
-              `Unknown function '${funcName}'`
+              `Unknown function '${functionCallRef.funcName}'`
             )
           )
       }
@@ -866,8 +866,8 @@ function getNonNullSubExpressionsFromRowCond(
       // evaluate to true, but cannot say anything about the operands
       return [expression]
     },
-    functionCall: ({ funcName, argList }) => {
-      if (functionNullSafety(funcName) === 'safe') {
+    functionCall: ({ functionCallRef, argList }) => {
+      if (functionNullSafety(functionCallRef.funcName) === 'safe') {
         return pipe(
           argList,
           Array.map(arg =>
@@ -1120,16 +1120,17 @@ function combineVirtualTables(
 function getSourceColumnsForTable(
   client: SchemaClient,
   ctes: VirtualTable[],
-  table: ast.TableRef,
+  table: ast.TableRef | ast.Expression.FunctionCallRef,
   as: string | null
 ): InferM.InferM<SourceColumn[]> {
+  const name = table.kind === 'TableRef' ? table.table : table.funcName;
   if (table.schema == null) {
     // Try to find a matching CTE
-    const result = ctes.find(virtualTable => virtualTable.name === table.table)
+    const result = ctes.find(virtualTable => virtualTable.name)
     if (result)
       return InferM.right(
         result.columns.map(col => ({
-          tableAlias: as || table.table,
+          tableAlias: as || name,
           columnName: col.name,
           nullability: col.nullability,
           hidden: false,
@@ -1139,10 +1140,10 @@ function getSourceColumnsForTable(
 
   // No matching CTE, try to find a database table
   return pipe(
-    client.getTable(table.schema, table.table),
+    client.getTable(table.schema, name),
     TaskEither.map(table =>
       table.columns.map(col => ({
-        tableAlias: as || table.name,
+        tableAlias: as || name,
         columnName: col.name,
         nullability: FieldNullability.any(col.nullable),
         hidden: col.hidden,
@@ -1156,7 +1157,7 @@ function getSourceColumnsForTableExpr(
   client: SchemaClient,
   ctes: VirtualTable[],
   paramNullability: ParamNullability[],
-  tableExpr: ast.TableExpression | null,
+  tableExpr: ast.TableExpression | ast.Expression.FunctionCall | null,
   setNullable: boolean = false
 ): InferM.InferM<SourceColumn[]> {
   if (!tableExpr) {
@@ -1205,6 +1206,9 @@ function getSourceColumnsForTableExpr(
             joinType === 'LEFT' || joinType === 'FULL'
           )
         ),
+      functionCall: ({ functionCallRef, argList }) =>
+        // TODO: create a similar function to introspect custom database functions
+        getSourceColumnsForTable(client, ctes, functionCallRef, null),
     }),
     InferM.map(sourceColumns =>
       setNullable ? setSourceColumnsAsNullable(sourceColumns) : sourceColumns

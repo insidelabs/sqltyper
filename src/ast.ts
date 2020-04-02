@@ -124,17 +124,29 @@ export namespace Expression {
     return { kind: 'InOp', lhs, op, subquery }
   }
 
+  export type FunctionCallRef = {
+    kind: 'FunctionCallRef'
+    schema: string | null
+    funcName: string
+  }
+
+  export namespace FunctionCallRef {
+    export function create(schema: string | null, funcName: string): FunctionCallRef {
+      return { kind: 'FunctionCallRef', schema, funcName }
+    }
+  }
+
   export type FunctionCall = {
     kind: 'FunctionCall'
-    funcName: string
+    functionCallRef: FunctionCallRef
     argList: Expression[]
   }
 
   export function createFunctionCall(
-    funcName: string,
+    functionCallRef: FunctionCallRef,
     argList: Expression[]
   ): FunctionCall {
-    return { kind: 'FunctionCall', funcName, argList }
+    return { kind: 'FunctionCall', functionCallRef, argList }
   }
 
   export type ArraySubQuery = {
@@ -329,7 +341,8 @@ export namespace Expression {
       case 'FunctionCall':
         if (a.kind !== b.kind) return false
         return (
-          a.funcName === b.funcName &&
+          a.functionCallRef.schema === b.functionCallRef.schema &&
+          a.functionCallRef.funcName === b.functionCallRef.funcName &&
           R.zip(a.argList, b.argList).every(([ap, bp]) => equals(ap, bp))
         )
       case 'ArraySubQuery':
@@ -486,12 +499,13 @@ export namespace TableExpression {
   export type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL'
 
   export function walk<T>(
-    tableExpr: TableExpression,
+    tableExpr: TableExpression | Expression.FunctionCall,
     handlers: {
       table: (node: Table) => T
       subQuery: (node: SubQuery) => T
       crossJoin: (node: CrossJoin) => T
       qualifiedJoin: (node: QualifiedJoin) => T
+      functionCall: (node: Expression.FunctionCall) => T
     }
   ): T {
     switch (tableExpr.kind) {
@@ -503,6 +517,8 @@ export namespace TableExpression {
         return handlers.crossJoin(tableExpr)
       case 'QualifiedJoin':
         return handlers.qualifiedJoin(tableExpr)
+      case 'FunctionCall':
+        return handlers.functionCall(tableExpr)
     }
   }
 }
@@ -542,7 +558,7 @@ export namespace Limit {
 
 export type SelectBody = {
   selectList: SelectListItem[]
-  from: TableExpression | null
+  from: TableExpression | Expression.FunctionCall | null
   where: Expression | null
   groupBy: Expression[]
   having: Expression | null
@@ -551,7 +567,7 @@ export type SelectBody = {
 export namespace SelectBody {
   export function create(
     selectList: SelectListItem[],
-    from: TableExpression | null,
+    from: TableExpression | Expression.FunctionCall | null,
     where: Expression | null,
     groupBy: Expression[],
     having: Expression | null
@@ -684,7 +700,7 @@ export type Update = {
   table: TableRef
   as: string | null
   updates: UpdateAssignment[]
-  from: TableExpression | null
+  from: TableExpression | Expression.FunctionCall | null
   where: Expression | null
   returning: SelectListItem[]
 }
@@ -695,7 +711,7 @@ export namespace Update {
     table: TableRef,
     as: string | null,
     updates: UpdateAssignment[],
-    from: TableExpression | null,
+    from: TableExpression | Expression.FunctionCall | null,
     where: Expression | null,
     returning: SelectListItem[]
   ): Update {
